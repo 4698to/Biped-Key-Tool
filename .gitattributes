@@ -5,6 +5,9 @@
 *.cs     diff=csharp
 
 # Standard to msysgit
+*.mse linguist-language=MaxScript
+*.ms linguist-language=MaxScript
+*.mcr linguist-language=MaxScript
 *.doc	 diff=astextplain
 *.DOC	 diff=astextplain
 *.docx diff=astextplain
