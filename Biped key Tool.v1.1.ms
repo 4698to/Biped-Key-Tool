@@ -36,8 +36,8 @@ rollout Biped_transform "Biped key Tool.v1.1"
     label lbl2 "X Y" pos:[101,136] width:20 height:16 enabled:false
     spinner end_key "" range:[-99999,99999,(animationRange.end.frame as integer)] type:#integer pos:[128,160] width:48 height:16 enabled:false
     spinner start_key "" range:[-99999,99999,(animationRange.start.frame as integer)] type:#integer pos:[38,160] width:48 height:16 enabled:false--range:[0,100,0]
-    label lbl4 "Start" pos:[8,160] width:24 height:16
-    label lbl5 "End" pos:[101,160] width:20 height:16
+    label lbl4 "Start" pos:[8,160] width:24 height:16 enabled:false
+    label lbl5 "End" pos:[101,160] width:20 height:16 enabled:false
     button btn_bake_Fk "Free Key" pos:[10,218] width:72 height:21
 
 
@@ -345,8 +345,8 @@ rollout about_inf "About"
 (
     label lb_txt "请确保Biped，Root坐标" align:#center
     label lb_txt2 "和世界坐标朝向一致" align:#center
-    label lb_txt4 "反馈：99U-199505"
-    label lb_txt3 "Mail:738746223@qq.com" align:#center
+    label lab_dw "V1.1 by Joe -2017/10/9"
+    hyperlink lbl_01 "更新" address:"https://github.com/4698to/Biped-Key-Tool" align:#Center
     button btn_baout "?"
     on btn_baout pressed do (
         messageBox (
@@ -354,7 +354,7 @@ rollout about_inf "About"
             )
     )
 )
-thenewfloater = newRolloutFloater "Biped key Tool.v1" 200 320
+thenewfloater = newRolloutFloater "Biped key Tool.v1.1" 200 320
 addRollout Biped_transform thenewfloater
 addRollout about_inf thenewfloater
 about_inf.open = false
