@@ -143,20 +143,13 @@ rollout Biped_transform "Biped key Tool.v1.3"
 
 
     label lbl1 "Floor" pos:[8,136] width:24 height:16
-    spinner sel_xy "" pos:[127,136] width:48 height:16 enabled:false
-    label lbl2 "X Y" pos:[101,136] width:20 height:16 enabled:false
+    spinner sel_xy "" pos:[127,136] width:48 height:16 range:[0,300,20] type:#float tooltip:"位移阈值，角色肩宽"--enabled:false
+    label lbl2 "X Y" pos:[101,136] width:20 height:16 --enabled:false
     spinner end_key "" range:[-99999,99999,(animationRange.end.frame as integer)] type:#integer pos:[128,160] width:48 height:16 enabled:false --设置从哪帧开始处理
     spinner start_key "" range:[-99999,99999,(animationRange.start.frame as integer)] type:#integer pos:[38,160] width:48 height:16 enabled:false--range:[0,100,0] --设置到哪帧为止结束处理
     label lbl4 "Start" pos:[8,160] width:24 height:16 enabled:false
     label lbl5 "End" pos:[101,160] width:20 height:16 enabled:false
     button btn_bake_Fk "Free Key" pos:[10,218] width:72 height:21
-
-
-
-
-
-
-
     -------------------------------------UI pressed
 
     on pick_biped pressed do --拾取Biped
@@ -200,7 +193,8 @@ rollout Biped_transform "Biped key Tool.v1.3"
             )
     )
 
-    on end_key changed val do (
+    on end_key changed val do
+    (
         if start_key.value != end_key.value then (
             bip_t.end_key_num = end_key.value - start_key.value
         )
@@ -222,7 +216,8 @@ rollout Biped_transform "Biped key Tool.v1.3"
         catch(print"FK_bug")
     )
 
-    on btn_bake_Ik pressed do (
+    on btn_bake_Ik pressed do
+    (
         try (
 
             bip_t.cT_biped()
@@ -316,19 +311,35 @@ rollout Biped_transform "Biped key Tool.v1.3"
                         local b_x_strat = biped.getKey bip_t.biped_b.horizontal.controller 1
                         for x=2 to bip_t.keys_x_num do
                         (
+                            local b_x_up = biped.getKey bip_t.biped_b.horizontal.controller (x-1)
 
                             local b_x = biped.getKey bip_t.biped_b.horizontal.controller x
+
                             key_time = (b_x.time.frame) as integer
 
+                            if abs(b_x.x - b_x_up.x) > Biped_transform.sel_xy.value do
+                            (
+                                animate on
+                                (
+                                    at time key_time
+                                    (
+                                        bip_t.root.pos.x = 0
+                                        root_move_data_x = (b_x.x)-(b_x_up.x)
+                                        b_x.x = b_x_up.x
+                                        bip_t.root.pos.x = root_move_data_x
+                                    )
+                                )
+                                print (x as string)
+                            )
                             --if abs(b_x.x) > abs(b_h_strat.x + sel_xy.value) then (
                                     animate on
                                     (
                                         at time key_time
                                         (
-                                            bip_t.root.pos.x = 0
-                                            root_move_data_x = (b_x.x)-(b_x_strat.x)
-                                            b_x.x = b_x_strat.x
-                                            bip_t.root.pos.x = root_move_data_x
+                                            --bip_t.root.pos.x = 0
+                                            --root_move_data_x = (b_x.x)-(b_x_strat.x)
+                                            --b_x.x = b_x_strat.x
+                                            --bip_t.root.pos.x = root_move_data_x
                                         )
                                     )
                             --)
@@ -372,6 +383,69 @@ rollout Biped_transform "Biped key Tool.v1.3"
     )
 ) --rollout End
 ------------------------------------------------------------
+
+rollout Bone_type "其他骨骼"
+(
+    button pick_v_hub "" width:170 height:21
+    button pick_v_root "" width:170 height:21
+    checkbox pick_x "X" across:3
+    checkbox pick_y "Y"
+    checkbox pick_z "Z"
+    button do_win width:72 height:21
+
+    ----------------------------------------------
+    fn hub_to_root a_hub b_root x_x =
+    ( --a_hub ;b_root ; x_x xyz三轴之一
+        if (a_hub[3][1].keys.count != 0) do --位移帧数不为 0
+        (
+            for i=2 to a_hub[3][1].keys.count do
+            (
+                local start_key = a_hub[3][1].keys[1]
+
+                animate On
+                (
+                    t = (a_hub[3][1].keys[i].time.frame as integer)
+                    (
+                        at time t
+                        (
+
+                        )
+                    )
+                )
+            )
+        )
+    )
+    ----------------------------------------------
+    on pick_v_hub pressed do
+    (
+        if selection.count !=0 do
+        (
+             v_hub = selection[1]
+             pick_v_hub.text = v_hub.name
+        )
+    )
+    ----------------------------------------------
+    on pick_v_root pressed do
+    (
+        if selection.count !=0 do
+        (
+             v_root = selection[1]
+             pick_v_root.text = v_root.name
+        )
+    )
+    ----------------------------------------------
+    on do_win pressed do
+    (
+
+    )
+    ----------------------------------------------
+    ----------------------------------------------
+    ----------------------------------------------
+    ----------------------------------------------
+    ----------------------------------------------
+)
+
+------------------------------------------------------------
 rollout about_inf "About"
 (
     label lb_txt "请确保Biped，Root坐标" align:#center
@@ -387,7 +461,9 @@ rollout about_inf "About"
 )
 thenewfloater = newRolloutFloater "Biped key Tool.v1.2" 200 320
 addRollout Biped_transform thenewfloater
+addRollout Bone_type thenewfloater
 addRollout about_inf thenewfloater
+
 
 bip_t=Biped_transform.bip_test()
 
