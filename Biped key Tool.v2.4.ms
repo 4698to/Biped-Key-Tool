@@ -21,8 +21,33 @@ rollout Biped_transform "Biped key Tool.v1.3"
         biped_tg,
         do_end,
         do_start,
+        key_x=#(),
         -------------------------------------------------------------
+        fn get_biped_move x_y_z =
+        ( --biped_obj biped对象;x_y_z 分别为 1,2,3
+            case of (
+                (x_y_z == 1):(
+                    key_x=#()
 
+                    bip_t.keys_x_num = bip_t.biped_b.horizontal.controller.keys.count
+                    for x=2 to bip_t.keys_x_num do
+                    (
+                        local b_x_up = biped.getKey bip_t.biped_b.horizontal.controller (x-1)
+
+                        local b_x = biped.getKey bip_t.biped_b.horizontal.controller x
+
+                        key_time = (b_x.time.frame) as integer
+
+                        if abs(b_x.x - b_x_up.x) > Biped_transform.sel_xy.value do
+                        (
+                            append bip_t.key_x x
+                        )
+                    )
+                )
+                (x_y_z == 2):()
+                (x_y_z == 3):()
+            )
+        ),
         -------------------------------------------------------------
         fn biped_add_freekey biped_node_controller biped_node = -- 设置IK
         (
@@ -310,6 +335,7 @@ rollout Biped_transform "Biped key Tool.v1.3"
                     ------------------------------------vertical.end
                     if Biped_transform.sel_horizontal_X.checked == true do
                     (
+                        bip_t.get_biped_move 1
 
                         bip_t.keys_x_num = bip_t.biped_b.horizontal.controller.keys.count
 
@@ -322,19 +348,39 @@ rollout Biped_transform "Biped key Tool.v1.3"
                             local b_x = biped.getKey bip_t.biped_b.horizontal.controller x
 
                             key_time = (b_x.time.frame) as integer
-                            --if abs(b_x.x) > abs(b_h_strat.x + sel_xy.value) then (
 
+                            --if abs(b_x.x - b_x_up.x) > Biped_transform.sel_xy.value then--do
+                            if (findItem bip_t.key_x key_time) != 0 then
+                            (
+                                animate on
+                                (
+                                    at time key_time
+                                    (
+                                        bip_t.root.pos.x = 0
+                                        root_move_data_x = b_x.x-b_x_strat.x--(b_x_up.x)
+                                        b_x.x = b_x_strat.x --b_x_up.x
+                                        bip_t.root.pos.x = root_move_data_x
+                                    )
+                                )
+                                --print ((x as string)+"=>"+(key_time as string ))
+                            )
+                            --if abs(b_x.x) > abs(b_h_strat.x + sel_xy.value) then (
+                            else
+                            (
                                     animate on
                                     (
                                         at time key_time
                                         (
-                                            bip_t.root.pos.x = 0
-                                            root_move_data_x = (b_x.x)-(b_x_strat.x)
-                                            b_x.x = b_x_strat.x
-                                            bip_t.root.pos.x = root_move_data
+                                            addNewKey bip_t.root[3][1] key_time
+                                            --bip_t.root.pos.x
+                                            --bip_t.root.pos.x = 0
+                                            --root_move_data_x = (b_x.x) - (b_x_up.x)--(b_x_strat.x)
+                                            --b_x.x = b_x.x - b_x_strat.x*2
+                                            b_x.x = b_x.x - bip_t.root.pos.x
+                                            --bip_t.root.pos.x = root_move_data_x
                                         )
                                     )
-
+                            )
                             --)
                             --else (at time key_time root.pos.x = 0 )
                         )
@@ -392,7 +438,32 @@ rollout Bone_type "其他骨骼"
     struct hub_ver
     (
         v_hub,
-        v_root
+        v_root,
+        tem_datas=#()
+    )
+    -------------------------------------------------
+        /*
+        fn get_obj_anim =
+        (
+            hub_t.tem_datas =#()
+            key_count = hub_t.v_hub.pos.controller.keys.count
+            key_start = hub_t.v_hub.pos.controller.keys[1]
+            for i=1 to key_count do
+            (
+                the_key = hub_t.v_hub.pos.controller.keys[i]
+                tem_data = tem_anim()
+                tem_data.time = the_key.time
+                tem_data.x = the_key.value.x
+                tem_data.y = the_key.value.y
+                tem_data.z = the_key.value.z
+                append hub_t.tem_datas tem_data
+            )
+        )
+        */
+    ---------------------------------------------------------
+    struct tem_anim (
+            time,x,y,z,root_x,root_y,root_z
+           -- Struct body.
     )
     ----------------------------------------------
     fn hub_to_root a_hub b_root x_x =
@@ -438,6 +509,7 @@ rollout Bone_type "其他骨骼"
     on do_win pressed do
     (
        -- Bone_type.sel_xyz.value
+
         hub_t.v_hub.pos.controller = tcb_position ()
         if Bone_type.pick_y.Checked == true do
         (
@@ -470,25 +542,63 @@ rollout Bone_type "其他骨骼"
         (
             key_count = hub_t.v_hub.pos.controller.keys.count
             key_start = hub_t.v_hub.pos.controller.keys[1]
-            for i=2 to key_count do
+
+            hub_t.tem_datas =#()
+            move_data = 0
+            for i=1 to (key_count-1) do
             (
-                up_key = hub_t.v_hub.pos.controller.keys[i-1]
+                up_key = hub_t.v_hub.pos.controller.keys[i+1]
                 the_key = hub_t.v_hub.pos.controller.keys[i]
-                animate on(
+
+                tem_data = tem_anim()
+
+                --animate on(
                     at time the_key.time
                     (
-                        if abs(the_key.value.x - up_key.value.x) > Bone_type.sel_xyz.value then
+                        tem_data.time = the_key.time
+                        --tem_data.x = the_key.value.x
+                        --tem_data.y = the_key.value.y
+                        --tem_data.z = the_key.value.z
+
+                        if abs(up_key.value.x - the_key.value.x) > Bone_type.sel_xyz.value then
                         (
-                            hub_t.v_root.pos.x = the_key.value.x - key_start.value.x
-                            the_key.value.x = key_start.value.x
+                            key_start = hub_t.v_hub.pos.controller.keys[i]
+
+                            move_data += up_key.value.x - the_key.value.x
+                            tem_data.root_x = move_data
+                            --tem_data.root_x = the_key.value.x - key_start.value.x
+                            --hub_t.v_root.pos.x = the_key.value.x - key_start.value.x
+                            --tem_data.x = up_key.value.x - move_data
+                            tem_data.x = key_start.value.x
+                            --the_key.value.x = key_start.value.x
                         )
                         else(
-                            addNewKey hub_t.v_root.pos.controller the_key.time
-                            the_key.value.x = the_key.value.x - hub_t.v_root.pos.x
+                            tem_data.root_x = move_data
+                            --addNewKey hub_t.v_root.pos.controller the_key.time
+                            --the_key.value.x = the_key.value.x - hub_t.v_root.pos.x
+                            --tem_data.x = the_key.value.x - hub_t.v_root.pos.x
+                            tem_data.x = up_key.value.x - move_data
+                        )
+                        append hub_t.tem_datas tem_data
+                    )
+                --)
+
+            )
+            for o=1 to (key_count-1) do
+            (
+                the_key = hub_t.v_hub.pos.controller.keys[o]
+                if hub_t.tem_datas[o].time == the_key.time do
+                (
+                    at time the_key.time
+                    (
+                        animate On
+                        (
+
+                            try (hub_t.v_root.pos.x = hub_t.tem_datas[o].root_x) catch (addNewKey hub_t.v_root.pos.controller the_key.time)
+                            the_key.value.x = hub_t.tem_datas[o].x
                         )
                     )
                 )
-
             )
 
         )

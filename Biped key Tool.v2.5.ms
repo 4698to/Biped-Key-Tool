@@ -1,4 +1,4 @@
-rollout Biped_transform "Biped key Tool.v1.3"
+rollout Biped_transform "Biped key Tool.v2.5"
 (
     global bip_t
     struct bip_test
@@ -384,10 +384,20 @@ rollout Bone_type "其他骨骼"
     checkbox pick_x "X" across:4
     checkbox pick_y "Y"
     checkbox pick_z "Z"
+    checkbox pick_mod "L" checked:true
 
-    spinner sel_xyz ""  width:48 height:16 range:[0,300,20] type:#float tooltip:"位移阈值，角色肩宽" offset:[-8,0]
+    button do_win "Do" width:72 height:21
 
-    button do_win width:72 height:21
+    spinner sel_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0]
+    spinner sel_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:""
+    button btn_leng  "距离"   width:40 height:21 offset:[12,0]
+
+
+    spinner app_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0]
+    spinner app_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:""
+    button do_leng  "" width:40 height:21 offset:[12,0]
+
+
     global hub_t
     struct hub_ver
     (
@@ -414,6 +424,17 @@ rollout Bone_type "其他骨骼"
                     )
                 )
             )
+        )
+    )
+    on btn_leng pressed do
+    (
+        if Bone_type.pick_mod.checked do
+        (
+            hub_t.v_hub.pos.controller = tcb_position ()
+            key_count = hub_t.v_hub[3][1].controller.keys.count
+            key_start = hub_t.v_hub[3][1].controller.keys[1]
+            key_end = hub_t.v_hub[3][1].controller.keys[key_count]
+            move_leng = key_end.value
         )
     )
     ----------------------------------------------
