@@ -388,22 +388,41 @@ rollout Bone_type "其他骨骼"
 
     button do_win "Do" width:72 height:21
 
-    spinner sel_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0]
-    spinner sel_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:""
+    spinner sel_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0] enabled:false
+    spinner sel_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:"" enabled:false
     button btn_leng  "距离"   width:40 height:21 offset:[12,0]
 
 
-    spinner app_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0]
-    spinner app_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:""
-    button do_leng  "" width:40 height:21 offset:[12,0]
+    --spinner app_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0]
+    --spinner app_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:""
+    button app_start ""width:72 height:21 across:2
+    button app_end ""width:72 height:21
+    button do_leng  "" width:72 height:21 --offset:[12,0]
 
 
     global hub_t
     struct hub_ver
     (
         v_hub,
-        v_root
+        v_root,
+        move_leng,
+        start_key_time,
+        end_key_time,
+        end_key_index,
+        start_key_index
     )
+    ----------------------------------------------
+    fn add =
+    (
+
+        for i= 1 to (hub_t.end_key_index - hub_t.start_key_index) do
+        (
+            key_start = hub_t.v_hub[3][1].controller.keys[hub_t.start_key_index]
+             hub_t.v_hub[3][1].controller.keys[hub_t.start_key_index+1]
+        )
+    )
+    ----------------------------------------------
+    ----------------------------------------------
     ----------------------------------------------
     fn hub_to_root a_hub b_root x_x =
     ( --a_hub ;b_root ; x_x xyz三轴之一
@@ -426,6 +445,33 @@ rollout Bone_type "其他骨骼"
             )
         )
     )
+    ----------------------------------------------
+
+    ----------------------------------------------
+    on app_end pressed do
+    (
+        hub_t.end_key_index = getKeyIndex hub_t.v_hub[3][1].controller sliderTime
+        if hub_t.start_key_index != 0 do
+        (
+            Bone_type.app_end.text = (hub_t.end_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
+        )
+    )
+    ----------------------------------------------
+    on app_start pressed do
+    (
+        hub_t.start_key_index = getKeyIndex hub_t.v_hub[3][1].controller sliderTime
+        if hub_t.start_key_index != 0 do
+        (
+            Bone_type.app_start.text = (hub_t.start_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
+        )
+    )
+    ----------------------------------------------
+    on pick_mod changed state do
+    (
+        Bone_type.sel_start.enabled = not (Bone_type.pick_mod.state)
+        Bone_type.sel_end.enabled = not (Bone_type.pick_mod.state)
+    )
+    ----------------------------------------------
     on btn_leng pressed do
     (
         if Bone_type.pick_mod.checked do
@@ -434,7 +480,10 @@ rollout Bone_type "其他骨骼"
             key_count = hub_t.v_hub[3][1].controller.keys.count
             key_start = hub_t.v_hub[3][1].controller.keys[1]
             key_end = hub_t.v_hub[3][1].controller.keys[key_count]
-            move_leng = key_end.value
+
+
+            hub_t.move_leng = key_end.value.x - key_start.value.x
+            Bone_type.btn_leng.text = abs(hub_t.move_leng) as string
         )
     )
     ----------------------------------------------
