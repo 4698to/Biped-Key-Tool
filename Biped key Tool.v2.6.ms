@@ -386,7 +386,7 @@ rollout Bone_type "其他骨骼"
     checkbox pick_z "Z"
     checkbox pick_mod "L" checked:true
 
-    button do_win "Do" width:72 height:21
+    button do_win "Do" width:72 height:21 enabled:false
 
     spinner sel_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0] enabled:false
     spinner sel_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:"" enabled:false
@@ -397,7 +397,7 @@ rollout Bone_type "其他骨骼"
     --spinner app_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:""
     button app_start ""width:72 height:21 across:2
     button app_end ""width:72 height:21
-    button do_leng  "do" width:72 height:21 --offset:[12,0]
+    button do_leng  "do" width:72 height:21 enabled:false --offset:[12,0]
 
 
     global hub_t
@@ -405,7 +405,9 @@ rollout Bone_type "其他骨骼"
     (
         v_hub,
         v_root,
-        move_leng,
+        move_leng_x,
+        move_leng_y,
+        move_leng_z,
         start_key_time,
         end_key_time,
         end_key_index,
@@ -416,6 +418,30 @@ rollout Bone_type "其他骨骼"
         key_count,
         key_o -- 计数
     )
+    fn chk_UI =
+    (
+        Bone_type.sel_start.enabled = not (Bone_type.pick_mod.state)
+        Bone_type.sel_end.enabled = not (Bone_type.pick_mod.state)
+        Bone_type.btn_leng.enabled = not (Bone_type.pick_mod.state)
+        /*
+        case of
+        (
+            (Bone_type.pick_x.state):(Bone_type.do_leng.enabled = true)
+            (Bone_type.pick_y.state):(Bone_type.do_leng.enabled = true)
+            (Bone_type.pick_z.state):(Bone_type.do_leng.enabled = true)
+        )
+        */
+        if Bone_type.pick_x.state or Bone_type.pick_y.state or Bone_type.pick_z.state then
+        (
+            Bone_type.do_leng.enabled = true
+            Bone_type.do_win.enabled = true
+        )
+        else
+        (
+            Bone_type.do_leng.enabled = false
+            Bone_type.do_win.enabled = false
+        )
+    )
     fn ad_mod =
     (
         if Bone_type.pick_mod.checked do
@@ -425,9 +451,10 @@ rollout Bone_type "其他骨骼"
             key_start = hub_t.v_hub[3][1].controller.keys[1]
             key_end = hub_t.v_hub[3][1].controller.keys[hub_t.key_count]
 
-
-            hub_t.move_leng = key_end.value.x - key_start.value.x
-            Bone_type.btn_leng.text = abs(hub_t.move_leng) as string
+            hub_t.move_leng_x = key_end.value.x - key_start.value.x
+            hub_t.move_leng_y = key_end.value.y - key_start.value.y
+            hub_t.move_leng_z = key_end.value.z - key_start.value.z
+            Bone_type.btn_leng.text = abs(hub_t.move_leng_x) as string
         )
     )
     ----------------------------------------------
@@ -438,12 +465,18 @@ rollout Bone_type "其他骨骼"
             index,
             width,
             hub_x,
-            root_x
+            root_x,
+            hub_y,
+            root_y,
+            hub_z,
+            root_z
         )
         hub_t.move_data = #()
         hub_t.key_index_list = #{hub_t.start_key_index..hub_t.end_key_index} -- 作用域 帧
         --hub_t.key_index_list = #{0..hub_t.end_key_index}
-        move_value = 0.0
+        move_value_x = 0.0
+        move_value_y = 0.0
+        move_value_z = 0.0
         for i in hub_t.key_index_list do --计算作用域部分
         (
             tem_move_data = move_leng_width()
@@ -452,12 +485,32 @@ rollout Bone_type "其他骨骼"
             key_next = hub_t.v_hub[3][1].controller.keys[i+1]
             tem_move_data.index = i+1
             tem_move_data.time = key_next.time
-            tem_move_data.width = 100.0 /((hub_t.end_key_index - hub_t.start_key_index ) as float)  --平均分配位移
-            move_value += tem_move_data.width * hub_t.move_leng /100.0
 
-            tem_move_data.hub_x = key_next.value.x - move_value
-            tem_move_data.root_x = move_value
-            --tem_move_data.width = (key_next.value.x - key_start.value.x)/hub_t.move_leng
+            if Bone_type.pick_x.state do  --X 轴
+            (
+               --tem_move_data.width = 100.0 /((hub_t.end_key_index - hub_t.start_key_index ) as float)  --平均分配位移
+               --move_value_x += tem_move_data.width * hub_t.move_leng_x /100.0
+                width = 100.0 /((hub_t.end_key_index - hub_t.start_key_index ) as float)
+                move_value_x += width * hub_t.move_leng_x /100.0
+
+                tem_move_data.hub_x = key_next.value.x - move_value_x
+                tem_move_data.root_x = move_value_x
+               --tem_move_data.width = (key_next.value.x - key_start.value.x)/hub_t.move_leng_x
+            )
+            if Bone_type.pick_y.state do
+            (
+                width = 100.0 /((hub_t.end_key_index - hub_t.start_key_index ) as float)
+                move_value_y += width * hub_t.move_leng_y /100.0
+                tem_move_data.hub_y = key_next.value.y - move_value_y
+                tem_move_data.root_y = move_value_y
+            )
+            if Bone_type.pick_z.state do
+            (
+                width = 100.0 /((hub_t.end_key_index - hub_t.start_key_index ) as float)
+                move_value_z += width * hub_t.move_leng_z /100.0
+                tem_move_data.hub_z = key_next.value.z - move_value_z
+                tem_move_data.root_z = move_value_z
+            )
             append hub_t.move_data tem_move_data
         )
         hub_t.move_data_b = #()
@@ -469,8 +522,22 @@ rollout Bone_type "其他骨骼"
             --key_next = hub_t.v_hub[3][1].controller.keys[i+1]
             tem_move_data.index = y
             tem_move_data.time = the_key.time
-            tem_move_data.hub_x = the_key.value.x - move_value
-            tem_move_data.root_x = move_value
+
+            if Bone_type.pick_x.state do
+            (
+                tem_move_data.hub_x = the_key.value.x - move_value_x
+                tem_move_data.root_x = move_value_x
+            )
+            if Bone_type.pick_y.state do
+            (
+                tem_move_data.hub_y = the_key.value.y - move_value_y
+                tem_move_data.root_y = move_value_y
+            )
+            if Bone_type.pick_z.state do
+            (
+                tem_move_data.hub_z = the_key.value.z - move_value_z
+                tem_move_data.root_z = move_value_z
+            )
             append hub_t.move_data_b tem_move_data
 
         )
@@ -493,8 +560,21 @@ rollout Bone_type "其他骨骼"
             key_next = hub_t.v_hub[3][1].controller.keys[i+1]
             animate On (
                 at time key_next.time(
-                    key_next.value.x = hub_t.move_data[hub_t.key_o].hub_x
-                    hub_t.v_root.pos.x = hub_t.move_data[hub_t.key_o].root_x
+                    if Bone_type.pick_x.state do
+                    (
+                        key_next.value.x = hub_t.move_data[hub_t.key_o].hub_x
+                        hub_t.v_root.pos.x = hub_t.move_data[hub_t.key_o].root_x
+                    )
+                    if Bone_type.pick_y.state do
+                    (
+                        key_next.value.y = hub_t.move_data[hub_t.key_o].hub_y
+                        hub_t.v_root.pos.y = hub_t.move_data[hub_t.key_o].root_y
+                    )
+                    if Bone_type.pick_z.state do
+                    (
+                        key_next.value.z = hub_t.move_data[hub_t.key_o].hub_z
+                        hub_t.v_root.pos.z = hub_t.move_data[hub_t.key_o].root_z
+                    )
                 )
             )
         )
@@ -507,11 +587,23 @@ rollout Bone_type "其他骨骼"
             animate On (
                 at time the_key.time
                 (
-                    try (
-                        the_key.value.x = hub_t.move_data_b[hub_t.key_o].hub_x
-                        hub_t.v_root.pos.x = hub_t.move_data_b[hub_t.key_o].root_x
-                        --addNewKey hub_t.v_root.pos.controller the_key.time
-                    )catch()
+                    if Bone_type.pick_x.state do
+                    (   try (
+                            the_key.value.x = hub_t.move_data_b[hub_t.key_o].hub_x
+                            hub_t.v_root.pos.x = hub_t.move_data_b[hub_t.key_o].root_x
+                            --addNewKey hub_t.v_root.pos.controller the_key.time
+                        )catch()
+                    )
+                    if Bone_type.pick_y.state do
+                    (
+                        the_key.value.y = hub_t.move_data_b[hub_t.key_o].hub_y
+                        hub_t.v_root.pos.y = hub_t.move_data_b[hub_t.key_o].root_y
+                    )
+                    if Bone_type.pick_z.state do
+                    (
+                        the_key.value.z = hub_t.move_data_b[hub_t.key_o].hub_z
+                        hub_t.v_root.pos.z = hub_t.move_data_b[hub_t.key_o].root_z
+                    )
                 )
             )
         )
@@ -567,9 +659,19 @@ rollout Bone_type "其他骨骼"
     ----------------------------------------------
     on pick_mod changed state do
     (
-        Bone_type.sel_start.enabled = not (Bone_type.pick_mod.state)
-        Bone_type.sel_end.enabled = not (Bone_type.pick_mod.state)
-        Bone_type.btn_leng.enabled = not (Bone_type.pick_mod.state)
+        chk_UI()
+    )
+    on pick_x changed state do
+    (
+        chk_UI()
+    )
+    on pick_y changed state do
+    (
+        chk_UI()
+    )
+    on pick_z changed state do
+    (
+        chk_UI()
     )
     ----------------------------------------------
     on btn_leng pressed do
