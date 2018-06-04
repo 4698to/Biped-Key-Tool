@@ -1,3 +1,4 @@
+/*
 rollout Biped_transform "Biped key Tool.v2.5"
 (
     global bip_t
@@ -376,8 +377,8 @@ rollout Biped_transform "Biped key Tool.v2.5"
     )
 ) --rollout End
 ------------------------------------------------------------
-
-rollout Bone_type "其他骨骼"
+*/
+rollout Bone_type "其他 v_3.0"
 (
     button pick_v_hub "" width:170 height:21
     button pick_v_root "" width:170 height:21
@@ -385,21 +386,26 @@ rollout Bone_type "其他骨骼"
     checkbox pick_y "Y"
     checkbox pick_z "Z"
     */
-    radiobuttons pick_xyz "" labels:#("X",  "Y",  "Z") columns:3 across:2
-    checkbox pick_mod "L" checked:true offset:[10,0]
+    label a_line "——————————————————————" enabled:false
+    radiobuttons pick_xyz "" labels:#("X",  "Y",  "Z") columns:3 across:3 offset:[12,0]
+    checkbox pick_mod "L" checked:true offset:[37,0] tooltip:"模式切换"
+    checkbox create_root "R" checked:true tooltip:"自动检查设置Root" offset:[16,0]
+    label b_line "——————————————————————" enabled:false
+    spinner Ground_floor "Floor" width:60 height:16 range:[-9999,9999,0] type:#float offset:[-65,0]
 
-    button do_win "Do" width:72 height:21 enabled:false
-
-    spinner sel_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0] enabled:false
-    spinner sel_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:"" enabled:false
-    button btn_leng  "距离"   width:40 height:21 offset:[12,0] --enabled:false
+    button btn_ik_fk "IK FK" width:72 height:21 across:2
+    button do_simple "Do" width:72 height:21 enabled:true tooltip:"操作前先存档"
+    label c_line "——————————————————————" enabled:false
+    --spinner sel_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0] enabled:false
+    --spinner sel_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:"" enabled:false
 
 
     --spinner app_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0]
     --spinner app_end "尾"  width:60 height:16 range:[-999999,999999,100] type:#integer tooltip:""
-    button app_start ""width:72 height:21 across:2
-    button app_end ""width:72 height:21
-    button do_leng  "do" width:72 height:21  --offset:[12,0] enabled:false
+    button app_start ""width:72 height:21 across:2 enabled:false tooltip:"设置作用域开始帧"
+    button app_end ""width:72 height:21 enabled:false tooltip:"设置作用域结束帧"
+    label d_line "——————————————————————" enabled:false
+    button do_leng  "doo" width:72 height:21 enabled:false tooltip:"操作前先存档"--offset:[12,0] enabled:false
 
 
     global hub_t
@@ -418,34 +424,286 @@ rollout Bone_type "其他骨骼"
         move_data_b=#(),
         key_index_list,
         key_count,
-        key_o-- 计数
+        key_o,-- 计数
+        keys_z_num,
+        keys_x_num,
+        keys_y_num,
+        Ground_height,
+        end_key_num,
+        biped_l_leg,
+        biped_r_leg,
+        biped_l_arm,
+        biped_r_arm,
+        biped_tg,
+        do_end,
+        do_start,
+        fn cT_root = --检查Root
+        (
+            try(
+                if Bone_type.create_root.state then
+                (
+                    if hub_t.v_hub.parent == undefined then(
+                        hub_t.v_root = point()
+                        hub_t.v_root.name = "root_" + hub_t.v_hub.name
+                        hub_t.v_hub.parent = hub_t.v_root
+                        return true
 
+                    )
+                    else(return true)
+                )
+                else (
+                    if hub_t.v_hub.parent == undefined then (
+                        if queryBox "选择的Biped没有Root，是否创建？" then (
+                            hub_t.v_root = point()
+                            hub_t.v_root.name = "root_" + hub_t.v_root.name
+                            hub_t.v_hub.parent = hub_t.v_root
+                            return true
+                        )
+                        else (return false)
+                    )
+                    else (return true)
+                )
+            )
+            catch(return false)
+        ),
+        fn cT_hub = --检查biped是否选取正常
+        (
+            try
+            (
+                hub_t.end_key_num = (animationRange.end.frame as integer)-(animationRange.start.frame as integer)
+
+                if (not IsValidNode hub_t.v_hub) do (
+                    try
+                    (
+                        hub_t.v_hub = execute("$"+Bone_type.pick_v_hub.text)
+                    )catch(hub_t.v_hub = execute("$"+ "'"+Bone_type.pick_v_hub.text+"'"))
+                )
+                if (IsValidNode hub_t.v_hub) then (
+                    if classOf hub_t.v_hub == Biped_Object do
+                    (
+                       -- biped_b = hub_t.v_hub.transform.controller
+                        hub_t.biped_l_leg = biped.getNode hub_t.v_hub #lleg link:3
+                        hub_t.biped_r_leg = biped.getNode hub_t.v_hub #rleg link:3
+                        hub_t.biped_l_arm = biped.getNode hub_t.v_hub #larm link:4
+                        hub_t.biped_r_arm = biped.getNode hub_t.v_hub #rarm link:4
+                        hub_t.biped_tg = #(hub_t.biped_l_leg,hub_t.biped_r_leg,hub_t.biped_l_arm,hub_t.biped_r_arm)
+                    )
+                    return true
+                )
+                else(return false)
+            )
+            catch
+            (
+                messageBox "重新 Biped 和 Root 试试！"
+                return false
+            )
+        )
     )
+        fn biped_add_freekey biped_node_controller biped_node = -- 设置IK
+        (
+            for i=1 to hub_t.end_key_num do
+            (
+                try
+                (
+                    the_key = biped.getKey biped_node_controller i
+                    the_key_time = (the_key.time.frame as integer)
+                )
+                catch (continue)
+                t=the_key_time
+                sliderTime= t
+                biped.setFreeKey biped_node
+
+            )
+        )
+    -----------------------------------------------------
+        fn biped_add_slidkey biped_node_controller = --设置FK
+        (
+            --hub_t.end_key_num = Biped_transform.end_key.value - Biped_transform.start_key.value
+            for i=1 to (hub_t.end_key_num + 1) do (
+                try (
+                    the_key = biped.getKey biped_node_controller i
+                    next_key = biped.getkey biped_node_controller (i+1)
+                )
+                catch (continue)
+
+                the_key_time = (the_key.time.frame as integer)+1
+                next_key_time = (next_key.time.frame as integer)-1
+                if next_key.time - the_key.time ==1f do (continue)
+
+                if the_key.ikspace == 1 and next_key.ikspace == 1 do(
+                    for t in the_key_time to next_key_time do (
+                        --print(t)
+                        biped.addNewkey biped_node_controller t
+                    )
+                )
+            )
+        )
+
+
+    -------------------------------------------------
+    fn bip_do_simple =
+    (
+        if  hub_t.cT_hub() and hub_t.cT_root() then
+        (
+            --try
+            --(
+                --undo "biped_move" on
+
+                    if Bone_type.pick_xyz.state ==3 do --垂直
+                    (
+                        try
+                        (
+                            --bip_t.biped_b = hub_t.v_hub.transform.controller
+                            hub_t.keys_z_num = hub_t.v_hub.transform.controller.vertical.controller.keys.count  --biped质心 上下轴动画帧数
+
+                            hub_t.Ground_height = Bone_type.Ground_floor.value --地板
+
+                            local biped_z_strat=biped.getKey hub_t.v_hub.transform.controller.vertical.controller 1
+                            undo "bip_vertical" on
+                            (
+                                for i=2 to hub_t.keys_z_num do --i = 2 开始 是因为第一帧不用处理
+                                (
+                                    local biped_z_next_key = biped.getKey hub_t.v_hub.transform.controller.vertical.controller i
+
+                                    local next_key_time_z = (biped_z_next_key.time.frame) as integer
+                                    if biped_z_strat.z > 0 do
+                                    (
+                                        if biped_z_next_key.z > biped_z_strat.z do
+                                        (  --跳起来
+                                            animate on
+                                            (
+                                                at time next_key_time_z
+                                                (
+                                                    hub_t.v_root.pos.z = 0
+                                                    root_move_data_z = (biped_z_next_key.z) - (biped_z_strat.z)
+
+                                                    biped_z_next_key.z = biped_z_strat.z
+                                                    hub_t.v_root.pos.z = root_move_data_z
+                                                )
+                                            )
+                                        )
+                                        --------------------------------------
+                                        if biped_z_next_key.z < biped_z_strat.z and biped_z_next_key.z > hub_t.Ground_height do
+                                        ( --只是下蹲
+                                            animate on
+                                            (
+                                                at time next_key_time_z(hub_t.v_root.pos.z = 0)
+                                            )
+                                        )
+                                        ---------------------------------------
+                                        if biped_z_next_key.z < hub_t.Ground_height do
+                                        ( ---穿地板向下跳？
+                                            animate on
+                                            (
+                                                at time next_key_time_z
+                                                (
+                                                    hub_t.v_root.pos.z = 0
+                                                    root_move_data_z = (biped_z_next_key.z)-(biped_z_strat.z)
+                                                    biped_z_next_key.z = biped_z_strat.z
+                                                    hub_t.v_root.pos.z = root_move_data_z
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )catch(print "vertical 有问题")
+                    )
+                    ------------------------------------vertical.end
+                    if Bone_type.pick_xyz.state ==1 do
+                    (
+
+                        hub_t.keys_x_num = hub_t.v_hub.transform.controller.horizontal.controller.keys.count
+
+                        local b_x_strat = biped.getKey bhub_t.v_hub.transform.controller.horizontal.controller 1--bip_t.key_x[1]
+                        undo "bip_horizontal_x" on
+                        (
+                            for x=2 to hub_t.keys_x_num do
+                            (
+                                local b_x_up = biped.getKey hub_t.v_hub.transform.controller.horizontal.controller (x-1)
+
+                                local b_x = biped.getKey hub_t.v_hub.transform.controller.horizontal.controller x
+
+                                key_time = (b_x.time.frame) as integer
+                                --if abs(b_x.x) > abs(b_h_strat.x + sel_xy.value) then (
+
+                                        animate on
+                                        (
+                                            at time key_time
+                                            (
+                                                hub_t.v_root.pos.x = 0
+                                                root_move_data_x = (b_x.x)-(b_x_strat.x)
+                                                b_x.x = b_x_strat.x
+                                                hub_t.v_root.pos.x = root_move_data
+                                            )
+                                        )
+
+                                --)
+                                --else (at time key_time root.pos.x = 0 )
+                            )
+                        )
+                    )
+                    ---------------------------------------------horizontal .x .end
+                    if Bone_type.pick_xyz.state ==2 do
+                    (
+                        try
+                        (
+                            hub_t.keys_y_num = hub_t.v_hub.transform.controller.horizontal.controller.keys.count --Y轴动画帧数
+                            local b_y_strat = biped.getKey hub_t.v_hub.transform.controller.horizontal.controller 1 --获取第一帧
+                            undo "bip_horizontal_y" on
+                            (
+                                for i=2 to hub_t.keys_y_num do
+                                (
+                                    local b_y = biped.getKey hub_t.v_hub.transform.controller.horizontal.controller i
+                                    key_time = (b_y.time.frame) as integer
+                                    animate on
+                                    (
+                                        at time key_time
+                                        (
+                                            hub_t.v_root.pos.y = 0
+                                            root_move_data_y = (b_y.y)-(b_y_strat.y)
+                                            b_y.y = b_y_strat.y
+                                            hub_t.v_root.pos.y = root_move_data_y
+                                        )
+                                    )
+                                )
+                            )
+                        )catch(print "horizontal_Y 有问题！！")
+                    )
+
+            --)
+           -- catch(print "BUG_btn_bake_001")
+        )
+        else (print "root 有问题！！")  ------------------------------------------ sel_horizontal_Y -- end
+    )
+    -------------------------------------------------
     fn chk_UI =
     (
-        Bone_type.sel_start.enabled = not (Bone_type.pick_mod.state)
-        Bone_type.sel_end.enabled = not (Bone_type.pick_mod.state)
-        Bone_type.btn_leng.enabled = not (Bone_type.pick_mod.state)
-
+        --Bone_type.sel_start.enabled = not (Bone_type.pick_mod.state)
+        --Bone_type.sel_end.enabled = not (Bone_type.pick_mod.state)
+        --Bone_type.btn_leng.enabled = not (Bone_type.pick_mod.state)
+        if Bone_type.pick_mod.state then
+        (
+            Bone_type.do_simple.enabled = true
+            Bone_type.do_leng.enabled = false
+            Bone_type.app_start.enabled = false
+            Bone_type.app_end.enabled = false
+        )
+        else(
+            Bone_type.do_simple.enabled =  false
+            Bone_type.do_leng.enabled = true
+            Bone_type.app_start.enabled = true
+            Bone_type.app_end.enabled = true
+        )
         case of
         (
-            (Bone_type.pick_xyz.state ==1):(Bone_type.do_leng.enabled = true)
-            (Bone_type.pick_xyz.state ==2):(Bone_type.do_leng.enabled = true)
-            (Bone_type.pick_xyz.state ==3):(Bone_type.do_leng.enabled = true)
+            (Bone_type.pick_xyz.state ==1 and Bone_type.pick_mod.state == false):(Bone_type.do_leng.enabled = true)
+            (Bone_type.pick_xyz.state ==2 and Bone_type.pick_mod.state == false):(Bone_type.do_leng.enabled = true)
+            (Bone_type.pick_xyz.state ==3 and Bone_type.pick_mod.state == false):(Bone_type.do_leng.enabled = true)
         )
 
-         /*
-        if Bone_type.pick_x.state or Bone_type.pick_y.state or Bone_type.pick_z.state then
-        (
-            Bone_type.do_leng.enabled = true
-            Bone_type.do_win.enabled = true
-        )
-        else
-        (
-            Bone_type.do_leng.enabled = false
-            Bone_type.do_win.enabled = false
-        )
-        */
+
+
     )
     fn ad_mod =
     (
@@ -887,106 +1145,111 @@ rollout Bone_type "其他骨骼"
     )
     ----------------------------------------------
     ----------------------------------------------
-    fn hub_to_root a_hub b_root x_x =
-    ( --a_hub ;b_root ; x_x xyz三轴之一
-        if (a_hub[3][1].keys.count != 0) do --位移帧数不为 0
+    on btn_ik_fk pressed do
+    (
+        if hub_t.cT_hub() do
         (
-            for i=2 to a_hub[3][1].keys.count do
+            for i in hub_t.biped_tg do
             (
-                local start_key = a_hub[3][1].keys[1]
+                local biped_fr = i.transform.controller
+                biped_add_slidkey biped_fr
+            )
 
-                animate On
-                (
-                    t = (a_hub[3][1].keys[i].time.frame as integer)
-                    (
-                        at time t
-                        (
-
-                        )
-                    )
-                )
+            for o in hub_t.biped_tg do (
+                local biped_fr = i.transform.controller
+                biped_add_freekey biped_fr o
             )
         )
     )
     ----------------------------------------------
     on do_leng pressed do
     (
-        if classOf hub_t.v_hub == Biped_Object then
+        if hub_t.cT_hub() and hub_t.cT_root() do
         (
-            if Bone_type.pick_xyz.state ==3 then
+            if classOf hub_t.v_hub == Biped_Object then
             (
-                bip_add_move_width_vertical();bip_app_frame_value_vertical()
+                if Bone_type.pick_xyz.state ==3 then
+                (
+                    bip_add_move_width_vertical();bip_app_frame_value_vertical()
+                )
+                else(
+                    bip_add_move_width_horizontal();bip_app_frame_value_horizontal()
+                )
             )
             else(
-                bip_add_move_width_horizontal();bip_app_frame_value_horizontal()
+                add_move_width();app_frame_value()
             )
-        )
-        else(
-            add_move_width();app_frame_value()
         )
     )
     ----------------------------------------------
     on app_end pressed do
     (
-        ad_mod()
-        if classOf hub_t.v_hub == Biped_Object then
+        if hub_t.cT_hub() and hub_t.cT_root() do
         (
-            if Bone_type.pick_xyz.state ==3 then
+            ad_mod()
+            if classOf hub_t.v_hub == Biped_Object then
             (
-                --biped_b = hub_t.v_hub.transform.controller
-                --keys_z_num = hub_t.v_hub.transform.controller.vertical.controller.keys.count
-
-                hub_t.end_key_index = getKeyIndex hub_t.v_hub.transform.controller.vertical.controller sliderTime
-                if hub_t.end_key_index != 0 do
+                if Bone_type.pick_xyz.state ==3 then
                 (
-                    Bone_type.app_end.text = (hub_t.end_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
+                    --biped_b = hub_t.v_hub.transform.controller
+                    --keys_z_num = hub_t.v_hub.transform.controller.vertical.controller.keys.count
+
+                    hub_t.end_key_index = getKeyIndex hub_t.v_hub.transform.controller.vertical.controller sliderTime
+                    if hub_t.end_key_index != 0 do
+                    (
+                        Bone_type.app_end.text = (hub_t.end_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
+                    )
+                )
+                else
+                (
+                    hub_t.end_key_index = getKeyIndex hub_t.v_hub.transform.controller.horizontal.controller sliderTime
+                    if hub_t.end_key_index != 0 do
+                    (
+                        Bone_type.app_end.text = (hub_t.end_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
+                    )
                 )
             )
             else
             (
-                hub_t.end_key_index = getKeyIndex hub_t.v_hub.transform.controller.horizontal.controller sliderTime
+                hub_t.end_key_index = getKeyIndex hub_t.v_hub[3][1].controller sliderTime
                 if hub_t.end_key_index != 0 do
                 (
                     Bone_type.app_end.text = (hub_t.end_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
                 )
-            )
-        )
-        else
-        (
-            hub_t.end_key_index = getKeyIndex hub_t.v_hub[3][1].controller sliderTime
-            if hub_t.end_key_index != 0 do
-            (
-                Bone_type.app_end.text = (hub_t.end_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
             )
         )
     )
     ----------------------------------------------
     on app_start pressed do
     (
-        ad_mod()
-        if classOf hub_t.v_hub == Biped_Object then
+        if hub_t.cT_hub() and hub_t.cT_root()  do
         (
-            if Bone_type.pick_xyz.state == 3 then
+            ad_mod()
+            if classOf hub_t.v_hub == Biped_Object then
             (
-                hub_t.start_key_index = getKeyIndex hub_t.v_hub.transform.controller.vertical.controller sliderTime
-                if hub_t.start_key_index != 0 do
+                if Bone_type.pick_xyz.state == 3 then
                 (
-                    Bone_type.app_start.text = (hub_t.start_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
+                    hub_t.start_key_index = getKeyIndex hub_t.v_hub.transform.controller.vertical.controller sliderTime
+                    if hub_t.start_key_index != 0 do
+                    (
+                        Bone_type.app_start.text = (hub_t.start_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
+                    )
+                )
+                else(
+                    hub_t.start_key_index = getKeyIndex hub_t.v_hub.transform.controller.horizontal.controller sliderTime
+                    if hub_t.start_key_index != 0 do
+                    (
+                        Bone_type.app_start.text = (hub_t.start_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
+                    )
                 )
             )
             else(
-                hub_t.start_key_index = getKeyIndex hub_t.v_hub.transform.controller.horizontal.controller sliderTime
+                hub_t.v_hub.pos.controller = tcb_position ()
+                hub_t.start_key_index = getKeyIndex hub_t.v_hub[3][1].controller sliderTime
                 if hub_t.start_key_index != 0 do
                 (
                     Bone_type.app_start.text = (hub_t.start_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
                 )
-            )
-        )
-        else(
-            hub_t.start_key_index = getKeyIndex hub_t.v_hub[3][1].controller sliderTime
-            if hub_t.start_key_index != 0 do
-            (
-                Bone_type.app_start.text = (hub_t.start_key_index as string) + ":"+ ((sliderTime.frame as integer) as string)
             )
         )
     )
@@ -994,36 +1257,16 @@ rollout Bone_type "其他骨骼"
     on pick_mod changed state do
     (
         chk_UI()
+        if hub_t.cT_hub() and hub_t.cT_root() do(ad_mod())
     )
-    on pick_x changed state do
+    on pick_xyz changed state do
     (
         chk_UI()
+        if hub_t.cT_hub() and hub_t.cT_root() do(ad_mod())
     )
-    on pick_y changed state do
-    (
-        chk_UI()
-    )
-    on pick_z changed state do
-    (
-        chk_UI()
-    )
+
     ----------------------------------------------
-    on btn_leng pressed do
-    (
-        /*
-        if Bone_type.pick_mod.checked do
-        (
-            hub_t.v_hub.pos.controller = tcb_position ()
-            hub_t.key_count = hub_t.v_hub[3][1].controller.keys.count
-            key_start = hub_t.v_hub[3][1].controller.keys[1]
-            key_end = hub_t.v_hub[3][1].controller.keys[hub_t.key_count]
 
-
-            hub_t.move_leng = key_end.value.x - key_start.value.x
-            Bone_type.btn_leng.text = abs(hub_t.move_leng) as string
-        )
-        */
-    )
     ----------------------------------------------
     on pick_v_hub pressed do
     (
@@ -1043,70 +1286,80 @@ rollout Bone_type "其他骨骼"
         )
     )
     ----------------------------------------------
-    on do_win pressed do
+    on do_simple pressed do
     (
        -- Bone_type.sel_xyz.value
-        hub_t.v_hub.pos.controller = tcb_position ()
-        if Bone_type.pick_xyz.state ==2 do
+        if hub_t.cT_hub() and hub_t.cT_root() do
         (
             if classOf hub_t.v_hub == Biped_Object then
             (
-
+                bip_do_simple()
             )
             else
             (
-                key_count = hub_t.v_hub[3][1].controller.keys.count
-                key_start = hub_t.v_hub[3][1].controller.keys[1]
-                for i=2 to key_count do
+                hub_t.v_hub.pos.controller = tcb_position ()
+                if Bone_type.pick_xyz.state ==2 do
                 (
-                    up_key = hub_t.v_hub[3][1].controller.keys[i-1]
-                    the_key = hub_t.v_hub[3][1].controller.keys[i]
-                    animate on(
-                        at time the_key.time
-                        (
-                            if abs(the_key.value.y - up_key.value.y) > Bone_type.sel_xyz.value then
-                            (
-                                hub_t.v_root.pos.y = the_key.value.y
-                                the_key.value.y = key_start.value.y
-                            )
-                            else(
-                                addNewKey hub_t.v_root[3][1] the_key.time
-                                the_key.value.y = the_key.value.y - hub_t.v_root.pos.y
-                            )
-                        )
-                    )
-
-                )
-            )
-        )
-
-        if Bone_type.pick_xyz.state == 1 do
-        (
-            key_count = hub_t.v_hub.pos.controller.keys.count
-            key_start = hub_t.v_hub.pos.controller.keys[1]
-            for i=2 to key_count do
-            (
-                up_key = hub_t.v_hub.pos.controller.keys[i-1]
-                the_key = hub_t.v_hub.pos.controller.keys[i]
-                animate on(
-                    at time the_key.time
+                    if classOf hub_t.v_hub == Biped_Object then
                     (
-                        if abs(the_key.value.x - up_key.value.x) > Bone_type.sel_xyz.value then
+
+                    )
+                    else
+                    (
+                        key_count = hub_t.v_hub[3][1].controller.keys.count
+                        key_start = hub_t.v_hub[3][1].controller.keys[1]
+                        for i=2 to key_count do
                         (
-                            hub_t.v_root.pos.x = the_key.value.x - key_start.value.x
-                            the_key.value.x = key_start.value.x
-                        )
-                        else(
-                            addNewKey hub_t.v_root.pos.controller the_key.time
-                            the_key.value.x = the_key.value.x - hub_t.v_root.pos.x
+                            up_key = hub_t.v_hub[3][1].controller.keys[i-1]
+                            the_key = hub_t.v_hub[3][1].controller.keys[i]
+                            animate on(
+                                at time the_key.time
+                                (
+                                    if abs(the_key.value.y - up_key.value.y) > Bone_type.sel_xyz.value then
+                                    (
+                                        hub_t.v_root.pos.y = the_key.value.y
+                                        the_key.value.y = key_start.value.y
+                                    )
+                                    else(
+                                        addNewKey hub_t.v_root[3][1] the_key.time
+                                        the_key.value.y = the_key.value.y - hub_t.v_root.pos.y
+                                    )
+                                )
+                            )
+
                         )
                     )
                 )
 
-            )
+                if Bone_type.pick_xyz.state == 1 do
+                (
+                    key_count = hub_t.v_hub.pos.controller.keys.count
+                    key_start = hub_t.v_hub.pos.controller.keys[1]
+                    for i=2 to key_count do
+                    (
+                        up_key = hub_t.v_hub.pos.controller.keys[i-1]
+                        the_key = hub_t.v_hub.pos.controller.keys[i]
+                        animate on(
+                            at time the_key.time
+                            (
+                                if abs(the_key.value.x - up_key.value.x) > Bone_type.sel_xyz.value then
+                                (
+                                    hub_t.v_root.pos.x = the_key.value.x - key_start.value.x
+                                    the_key.value.x = key_start.value.x
+                                )
+                                else(
+                                    addNewKey hub_t.v_root.pos.controller the_key.time
+                                    the_key.value.x = the_key.value.x - hub_t.v_root.pos.x
+                                )
+                            )
+                        )
 
+                    )
+
+                )
+                hub_t.v_hub.pos.controller = Position_XYZ ()
+            )
         )
-        hub_t.v_hub.pos.controller = Position_XYZ ()
 
     )
     ----------------------------------------------
@@ -1130,8 +1383,8 @@ rollout about_inf "About"
             )
     )
 )
-thenewfloater = newRolloutFloater "Biped key Tool.v1.2" 200 320
-addRollout Biped_transform thenewfloater
+thenewfloater = newRolloutFloater "Biped key Tool.v_3.0" 200 320
+--addRollout Biped_transform thenewfloater
 addRollout Bone_type thenewfloater
 addRollout about_inf thenewfloater
 
