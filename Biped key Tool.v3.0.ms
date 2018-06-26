@@ -393,7 +393,7 @@ rollout Bone_type "其他 v_3.0"
     label b_line "——————————————————————" enabled:false
     spinner Ground_floor "Floor" width:60 height:16 range:[-9999,9999,0] type:#float offset:[-65,0]
 
-    button btn_ik_fk "IK FK" width:72 height:21 across:2
+    button btn_ik_fk "IK FK" width:72 height:21 across:2 tooltip:"处理手脚IK"
     button do_simple "Do" width:72 height:21 enabled:true tooltip:"操作前先存档"
     label c_line "——————————————————————" enabled:false
     --spinner sel_start "头"  width:60 height:16 range:[-999999,999999,0] type:#integer tooltip:"" across:3 offset:[-10,0] enabled:false
@@ -472,11 +472,13 @@ rollout Bone_type "其他 v_3.0"
             (
                 hub_t.end_key_num = (animationRange.end.frame as integer)-(animationRange.start.frame as integer)
 
-                if (not IsValidNode hub_t.v_hub) do (
+                --if (not IsValidNode hub_t.v_hub) do (
+                if Bone_type.pick_v_hub.text !="" do (
                     try
                     (
                         hub_t.v_hub = execute("$"+Bone_type.pick_v_hub.text)
-                    )catch(hub_t.v_hub = execute("$"+ "'"+Bone_type.pick_v_hub.text+"'"))
+                    )catch
+                    (hub_t.v_hub = execute("$"+ "'"+Bone_type.pick_v_hub.text+"'"))
                 )
                 if (IsValidNode hub_t.v_hub) then (
                     if classOf hub_t.v_hub == Biped_Object do
@@ -490,7 +492,8 @@ rollout Bone_type "其他 v_3.0"
                     )
                     return true
                 )
-                else(return false)
+                else
+                (return false)
             )
             catch
             (
@@ -1145,19 +1148,19 @@ rollout Bone_type "其他 v_3.0"
     )
     ----------------------------------------------
     ----------------------------------------------
-    on btn_ik_fk pressed do
+    on btn_ik_fk pressed do --处理手脚IK
     (
         if hub_t.cT_hub() do
         (
             for i in hub_t.biped_tg do
             (
                 local biped_fr = i.transform.controller
-                biped_add_slidkey biped_fr
+                Bone_type.biped_add_slidkey biped_fr
             )
 
             for o in hub_t.biped_tg do (
-                local biped_fr = i.transform.controller
-                biped_add_freekey biped_fr o
+                local biped_fr = o.transform.controller
+                Bone_type.biped_add_freekey biped_fr o
             )
         )
     )
