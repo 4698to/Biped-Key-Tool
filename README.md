@@ -1,10 +1,24 @@
 
 
 ---
-#Biped Key Tool
+#Biped位移转移工具v_3.3 2018/10/11
 -------------
+##  全新版本
 
-> Biped Key Tool v.1
+无脑模式就是旧版本的做法。
+
+
+![image](https://github.com/4698to/Biped-Key-Tool/blob/master/01111.png)
+
+![image](https://github.com/4698to/Biped-Key-Tool/blob/master/01112.png)
+
+![image](https://github.com/4698to/Biped-Key-Tool/blob/master/01113.png)
+
+![image](https://github.com/4698to/Biped-Key-Tool/blob/master/01114.png)
+
+---------------------------------------------
+
+> Biped Key Tool
   转移biped质心位移到根Root上。
 
 
