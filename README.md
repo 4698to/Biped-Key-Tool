@@ -3,7 +3,7 @@
 
 ## v40
 
-![image](https://github.com/4698to/Biped-Key-Tool/blob/master/_8X(9TKODUMNFNL25M1E[]J.png)
+![image](https://github.com/4698to/Biped-Key-Tool/blob/master/9TKODUMNFNL25M1E.png)
 
 增加 转移旋转功能
 
@@ -42,13 +42,7 @@
 无脑模式就是旧版本的做法。
 
 
-![image](https://github.com/4698to/Biped-Key-Tool/blob/master/01111.png)
 
-![image](https://github.com/4698to/Biped-Key-Tool/blob/master/01112.png)
-
-![image](https://github.com/4698to/Biped-Key-Tool/blob/master/01113.png)
-
-![image](https://github.com/4698to/Biped-Key-Tool/blob/master/01114.png)
 
 ---------------------------------------------
 
